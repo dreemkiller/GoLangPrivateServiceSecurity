@@ -9,7 +9,7 @@ Why aren't we creating our own private CA? Partially because it's a bit of a pai
 
 So here's the first code snippet. It returns a "Dialer" function that should be used as the DialTLS member of the http.Transport struct on the client.
 
-```
+```go
 package TLSDialer;
 
 import (
@@ -91,7 +91,7 @@ func MakeDialer(pubKeyFingerprint []byte, certFilename string, keyFilename strin
 }
 ```
 Now, when the client makes a request, it does the following:
-```
+```go
   dialer, err := TLSDialer.MakeDialer(pubKeyHash[:], clientCertificatePath, clientKeyPath);
   
   client := &http.Client{
@@ -104,24 +104,24 @@ Now, when the client makes a request, it does the following:
   response, err := client.Do(request);
 ```
 There are a couple of things to note here. First, the clientCertificatePath should be a path to a file containing a self-signed certificate, and the clientKeyPath should be a path to a file containing a private RSA, ECC, or DH key. You can generate these as follows:
-```
+```bash
 openssl genrsa -out client.key 4096
 ```
 which generates a 4k RSA private key and places it in client.key.
-```
+```bash
 openssl req -new -x509 -sha256 -key client.key -out client.crt -days 3650
 ```
 It will prompt you for some information to be included in the certificate. What you enter really doesn't matter for our use-case, but entering useful information will make it easier to manage certificates.
 which generates a self-signed x.509 certificate that is valid for ten years, and places it in the file client.crt
 
 the pubKeyHash value should be the SHA256 hash of the public key being used by the service you are communicating with. if you've got the PEM encoded public key for the service in a file, you can generate it this way:
-```
+```bash
 openssl rsa -in servicekey.pem -pubout > servicepubkey.pem | openssl dgst -sha256
 ```
 Only the data to the right of the equal sign should be included in the pubKeyHash byte array.
 
 Here's a code snippet for the server side:
-```
+```go
     clientCert, err := ioutil.ReadFile(clientCertificatePath); if err != nil {
         err = errors.Wrap(err, "Failed to read client certificate file")
         return
